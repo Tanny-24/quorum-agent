@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Phase 0 interrupt durability spike runtime artifacts
+spikes/interrupt_durability/_state/
+spikes/interrupt_durability/_effects.log
+spikes/interrupt_durability/_effects.lock
+spikes/interrupt_durability/_pending.json
