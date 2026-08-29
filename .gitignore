@@ -8,3 +8,4 @@ spikes/interrupt_durability/_state/
 spikes/interrupt_durability/_effects.log
 spikes/interrupt_durability/_effects.lock
 spikes/interrupt_durability/_pending.json
+.env
