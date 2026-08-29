@@ -1,0 +1,1 @@
+"""Typed normalized event ingestion."""

@@ -9,3 +9,8 @@ spikes/interrupt_durability/_effects.log
 spikes/interrupt_durability/_effects.lock
 spikes/interrupt_durability/_pending.json
 .env
+
+# QUORUM core local runtime
+_runtime/
+quorum_sessions/
+*.db

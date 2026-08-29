@@ -1,0 +1,1 @@
+"""Typed QUORUM domain models."""
