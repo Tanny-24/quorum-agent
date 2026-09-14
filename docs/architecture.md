@@ -1,41 +1,55 @@
 # QUORUM Core Architecture
 
-The current local core keeps natural-language interpretation separate from deterministic authority.
+QUORUM separates probabilistic language reasoning from deterministic authority. A small provider factory supplies a configured Strands Model to both agent roles and the structured classifier. Google Gemini is the active submission provider.
 
-```text
-Telegram / API event
+~~~text
+Events / Telegram
         ↓
-provider-neutral normalization + event idempotency
+provider-neutral normalizer + event idempotency
         ↓
-Coordinator (fresh Strands Agent, org:riverside session)
+Coordinator Agent — Strands (org:riverside session)
         ↓
-deterministic gap detection and ranked candidates
+Google Gemini 3.6 Flash — language reasoning + tool selection
         ↓
-Negotiator (fresh Strands Agent, nego:{shift}:{volunteer} session)
+QUORUM tools + deterministic gap/ranking services
         ↓
-registered tool call
+Negotiator Agent — Strands (nego:{shift}:{volunteer} session)
         ↓
 BeforeToolCallEvent RoutingHook
         ↓
-hard policy → static reversibility → EV heuristic → attention budget
+hard policy → static reversibility → EV heuristic → Attention Budget
         ↓
 GREEN execute | YELLOW PendingEffect | RED InterruptRecord | SILENT/DEFER ledger
         ↓
-append-only logical decision feed
-```
+assignment capacity + append-only logical decision feed
+~~~
+
+## Model boundary
+
+Settings reads QUORUM_MODEL_PROVIDER, QUORUM_MODEL_ID, and GEMINI_API_KEY without logging them. quorum.agents.models.create_model owns provider-specific construction; Coordinator and Negotiator only receive the generic Strands Model interface. The Gemini key is passed in memory through client_args and never enters a prompt or result.
+
+Gemini uses thinking_level=minimal, temperature zero, and bounded output for short operational turns. The classifier uses Strands' provider-native JSON-schema output. Deterministic code canonicalizes known conditions such as transport and overrides injury, complaint, and prompt-injection-shaped replies. A model can raise concern but cannot lower an observable safety signal.
 
 ## Deterministic authority
 
-Code—not a model—owns staffing arithmetic, eligibility, candidate scores, contact limits, quiet hours, assignment capacity, stable idempotency keys, routing thresholds, attention spending, pending transitions, interrupt resolution, and ledger records. An empty candidate pool raises observable uncertainty to its maximum. Model concern may raise uncertainty but cannot lower observable concern.
+Code—not Gemini—owns staffing arithmetic, eligibility, age and background-check rules, candidate scores, contact limits, quiet hours, assignment capacity and race resolution, stable idempotency keys, routing thresholds, Attention Budget spending, PendingEffect transitions, interrupt resolution, and ledger records.
 
-The EV formula `(consequence × uncertainty × urgency) / reversibility` is a named policy heuristic, not a claim of mathematical optimality. Layer-0 injury, safeguarding, vulnerable-person, harassment, discrimination, complaint, service-allocation, permanent-removal, money/employment, and unsafe-minor cases bypass EV and route directly to RED.
+The heuristic (consequence × uncertainty × urgency) / reversibility is named policy, not model judgment. Layer-0 injury, safeguarding, vulnerable-person, harassment, discrimination, complaint, service-allocation, permanent-removal, money/employment, and unsafe-minor cases bypass the heuristic and route directly to RED.
 
 ## Persistence and concurrency
 
-`MemoryStore` provides locked atomic behavior for tests/local development. `DynamoDBStore` expresses conditional writes for idempotency, status transitions, assignment seat capacity, and attention spending; it does not require live AWS for tests. Strands conversation state uses explicit `FileSessionManager` paths and stable session IDs.
+MemoryStore provides locked atomic behavior for tests and the demo. DynamoDBStore expresses conditional writes for a future deployment; it is not claimed as live. Strands conversation state uses FileSessionManager and stable session IDs.
 
-YELLOW timers persist `settle_at`; no long-running sleep represents business state. Settlement claims `PENDING → SETTLING` conditionally before execution. Cancellation competes with the same transition, so only one wins. RED resolution is idempotent, and the Phase 0 spike remains the process-restart proof for Strands interrupt state and exactly-once side effects.
+YELLOW timers persist settle_at; no sleep represents business state. Settlement conditionally claims PENDING → SETTLING, while cancellation competes with the same transition. RED resolution is idempotent. The Phase 0 restart spike proves Strands interrupt state and exactly-once side effects survive a process restart.
 
-## Current boundary
+## Real submission evidence
 
-The local deterministic workflow and test doubles exercise the whole roster-recovery path. Real Bedrock execution and live DynamoDB validation are separate external checks. No Evals, AgentCore, EventBridge, dashboard, or production deployment is claimed.
+scripts.run_agent_demo fails closed unless it observes:
+
+- a Gemini-backed Coordinator call to get_shift;
+- a two-turn Gemini-backed Negotiator call to find_transport_option;
+- structured conditional, unclear, safety, and injection classifications;
+- deterministic transport canonicalization, assignment, and resolved gap state;
+- Layer-0 RED routing with one persisted human interrupt.
+
+Model provider selection remains configurable. Amazon Bedrock integration is planned once AWS account activation is resolved; it is not an active component or completed deployment.

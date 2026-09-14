@@ -15,6 +15,9 @@ class Settings:
     session_dir: Path = Path("_runtime/sessions")
     attention_budget: int = 2
     store: str = "memory"
+    model_provider: str = "gemini"
+    model_id: str = "gemini-3.6-flash"
+    gemini_api_key: str | None = None
     aws_region: str = "us-west-2"
     bedrock_reasoner_model: str | None = None
     bedrock_classifier_model: str | None = None
@@ -29,6 +32,9 @@ class Settings:
             session_dir=Path(os.getenv("QUORUM_SESSION_DIR", "_runtime/sessions")),
             attention_budget=int(os.getenv("QUORUM_ATTENTION_BUDGET", "2")),
             store=os.getenv("QUORUM_STORE", "memory"),
+            model_provider=os.getenv("QUORUM_MODEL_PROVIDER", "gemini").strip().lower(),
+            model_id=os.getenv("QUORUM_MODEL_ID", "gemini-3.6-flash").strip(),
+            gemini_api_key=os.getenv("GEMINI_API_KEY") or None,
             aws_region=os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-west-2")),
             bedrock_reasoner_model=os.getenv("BEDROCK_REASONER_MODEL") or None,
             bedrock_classifier_model=os.getenv("BEDROCK_CLASSIFIER_MODEL") or None,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from quorum.agents.classifier import ReplyClassifier
+from quorum.agents.classifier import ModelReplyClassifier, ReplyClassifier
 from quorum.domain.models import (
     Assignment,
     GapStatus,
@@ -27,11 +27,13 @@ from quorum.utils import stable_id, stable_key, utc_now
 
 
 class CoreWorkflow:
-    def __init__(self, store: MemoryStore) -> None:
+    def __init__(
+        self, store: MemoryStore, classifier: ReplyClassifier | ModelReplyClassifier | None = None
+    ) -> None:
         self.store = store
         self.events = EventHandler(store)
         self.ranker = CandidateRanker(store)
-        self.classifier = ReplyClassifier()
+        self.classifier = classifier or ReplyClassifier()
         self.ledger = DecisionLedger(store)
         self.pending = PendingEffectService(store)
         self.interrupts = InterruptService(store)

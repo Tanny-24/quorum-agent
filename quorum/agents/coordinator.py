@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from strands import Agent
-from strands.models import BedrockModel, Model
+from strands.models import Model
 from strands.session import FileSessionManager
 
+from quorum.agents.models import create_model
 from quorum.agents.prompts import COORDINATOR_PROMPT
 from quorum.config import Settings
 
@@ -19,14 +20,7 @@ def create_coordinator_agent(
     hooks: list[object] | None = None,
 ) -> Agent:
     if model is None:
-        if not settings.bedrock_reasoner_model:
-            raise RuntimeError("BEDROCK_REASONER_MODEL must name a verified model")
-        model = BedrockModel(
-            region_name=settings.aws_region,
-            model_id=settings.bedrock_reasoner_model,
-            temperature=0,
-            max_tokens=512,
-        )
+        model = create_model(settings)
     storage = Path(settings.session_dir)
     storage.mkdir(parents=True, exist_ok=True)
     return Agent(

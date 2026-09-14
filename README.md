@@ -1,69 +1,85 @@
 # QUORUM
 
-QUORUM is an attention-aware autonomous roster-recovery agent for the synthetic **Riverside Food Bank**. The current repository contains the Phase 0 durable Strands interrupt spike and a local core MVP. It is not a general volunteer-management product.
+QUORUM is an attention-aware autonomous roster-recovery agent for the synthetic **Riverside Food Bank**. It uses the Strands Agents SDK with Google Gemini as the active model provider. Strands remains provider-agnostic; QUORUM's agent architecture and deterministic authority do not change with the model provider.
 
-Implemented locally:
+Implemented:
 
-- Telegram send, polling, and provider-neutral normalization
-- typed synthetic domain with six sites, 36 volunteers, and six shifts
-- deterministic gap detection, eligibility, explainable ranking, policy, routing, and idempotency
-- atomic assignment capacity, attention budgets, YELLOW settlement windows, RED interrupt records, and decision ledger
-- fresh-per-invocation Strands Coordinator and Negotiator factories using `FileSessionManager`
-- FastAPI endpoints and a three-scenario deterministic demo
-- DynamoDB conditional-operation adapter (unit-tested, not live-validated)
+- separate Strands Coordinator and per-thread Negotiator agents
+- real Gemini-backed inference and Strands tool calling
+- persisted organization and nego:{shift}:{volunteer} sessions
+- durable interrupt/resume proof
+- deterministic gap detection, eligibility, candidate ranking, and assignment capacity
+- BeforeToolCallEvent routing across GREEN, YELLOW, RED, and SILENT/DEFER
+- Attention Budget, cancellable PendingEffect settlement, stable idempotency, and decision ledger
+- deterministic safety overrides that model output cannot downgrade
+- FastAPI backend and provider-neutral Telegram channel
+- synthetic dataset, three deterministic scenarios, and a fail-closed live agent demo
 
-Not implemented here: Evals, AgentCore/EventBridge deployment, frontend/dashboard, analytics, or production IAM.
+Amazon Bedrock was the originally intended provider but could not be live-validated because AWS account activation remained blocked during the hackathon. Bedrock and the DynamoDB adapter remain future deployment paths, not completed submission infrastructure. AgentCore, EventBridge, a dashboard, and production IAM are not claimed.
 
 ## Setup
 
-```bash
+~~~bash
 python3.13 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 cp .env.example .env
-```
+~~~
 
-Keep real Telegram values only in `.env`; it is ignored by Git. Bedrock model IDs are intentionally blank until verified in the target AWS account.
+Set these values in the ignored .env:
+
+~~~dotenv
+GEMINI_API_KEY=your-local-secret
+QUORUM_MODEL_PROVIDER=gemini
+QUORUM_MODEL_ID=gemini-3.6-flash
+~~~
+
+Never commit .env. gemini-2.5-flash returned a provider 404 for this account because it is unavailable to new users; gemini-3.6-flash is the API-verified replacement. QUORUM uses minimal thinking and short output budgets for predictable operational turns.
 
 ## Run
 
-```bash
+~~~bash
 # Inspect the synthetic fixture
-.venv/bin/python -m scripts.seed_demo
+PYTHONPATH=. .venv/bin/python -m scripts.seed_demo
 
-# Run the local three-path core demo (uses a labelled compressed settlement clock)
-.venv/bin/python -m scripts.run_demo
+# Run the three deterministic authority/safety scenarios
+PYTHONPATH=. .venv/bin/python -m scripts.run_demo
+
+# Run real Gemini Coordinator, Negotiator, tools, classifications, E2E, and RED safety proof
+PYTHONPATH=. .venv/bin/python -m scripts.run_agent_demo
 
 # Start the API
-.venv/bin/uvicorn quorum.api.app:app --reload
+PYTHONPATH=. .venv/bin/uvicorn quorum.api.app:app --reload
 
-# Run tests, including the Phase 0 regression
-.venv/bin/python -m pytest tests spikes/interrupt_durability/test_spike.py -v
-```
+# Run the full suite, including Phase 0 durability
+PYTHONPATH=. .venv/bin/python -m pytest tests spikes/interrupt_durability/test_spike.py -v
+~~~
+
+The live demo prints only synthetic observable state. It includes a 55-second pause between phases so it fits Gemini free-tier request windows. It fails instead of simulating success when Gemini, tool calls, classifications, resolution, or safety evidence is missing.
 
 API endpoints:
 
-- `GET /health`
-- `GET /shifts`
-- `POST /events/cancel`
-- `POST /events/no-show`
-- `POST /events/tick`
-- `POST /webhooks/messages`
-- `GET /interrupts`
-- `POST /interrupts/{id}/resolve`
-- `GET /feed`
-- `POST /pending/{id}/cancel`
+- GET /health
+- GET /shifts
+- POST /events/cancel
+- POST /events/no-show
+- POST /events/tick
+- POST /webhooks/messages
+- GET /interrupts
+- POST /interrupts/{id}/resolve
+- GET /feed
+- POST /pending/{id}/cancel
 
-## Telegram development commands
+## Telegram
 
-Both paths use `TelegramChannel`; neither prints secrets or message contents.
+The existing adapter has real inbound and outbound validation. These commands use TelegramChannel and never print credentials or message contents:
 
-```bash
-.venv/bin/python -m scripts.send_test_message
-.venv/bin/python -m scripts.poll_telegram
-```
+~~~bash
+PYTHONPATH=. .venv/bin/python -m scripts.send_test_message
+PYTHONPATH=. .venv/bin/python -m scripts.poll_telegram
+~~~
 
-The smoke command sends exactly: `QUORUM core integration smoke test`.
+The isolated smoke command sends exactly QUORUM Gemini integration ready; run it at most once after the Gemini demo passes.
 
-## Architecture
+## Submission material
 
-See `docs/architecture.md`. Production Bedrock and DynamoDB validation remain dependent on configured AWS credentials and resources.
+See [architecture](docs/architecture.md), [four-minute demo script](docs/demo-script.md), and [Devpost draft](docs/devpost-submission.md).
