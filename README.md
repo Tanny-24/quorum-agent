@@ -1,5 +1,107 @@
 # QUORUM
 
+### Attention-aware autonomous coordination agent built with Strands Agents SDK + Google Gemini
+
+> **Most AI agents compete on how much they can do. QUORUM competes on how little of your attention it needs.**
+
+Built for the **AWS Agents for Humans Hackathon — Good Neighbor Agents Track**.
+
+---
+
+## The Problem
+
+Small community organizations often depend on volunteers to keep essential operations running.
+
+A single volunteer cancellation can trigger a surprisingly large amount of coordination:
+
+- Who is eligible to replace them?
+- Who is available?
+- Who has already been contacted too often?
+- Can a volunteer help only under certain conditions?
+- Does the coordinator actually need to be interrupted?
+- Is the situation safe enough for an AI system to handle autonomously?
+
+Traditional systems either leave all of this work to a human coordinator or notify the coordinator about every small issue.
+
+QUORUM takes a different approach.
+
+It treats **human attention as a scarce resource**.
+
+---
+
+## What is QUORUM?
+
+QUORUM is an autonomous volunteer-coordination agent for community organizations.
+
+It can:
+
+- detect staffing gaps,
+- identify eligible volunteers,
+- rank candidates deterministically,
+- contact and negotiate with volunteers,
+- understand conditional responses,
+- resolve ordinary blockers,
+- update assignments,
+- keep an auditable decision trail,
+- and interrupt the human coordinator only when genuine judgment is required.
+
+A coordinator can operate with an **Attention Budget**, such as:
+
+> "I only want to be interrupted twice this week unless something is genuinely critical."
+
+QUORUM must then ration its right to interrupt.
+
+---
+
+## Core Principle
+
+### LLM proposes; deterministic code disposes.
+
+Google Gemini is used for:
+
+- language understanding,
+- reply interpretation,
+- negotiation,
+- structured classification,
+- and tool selection.
+
+Deterministic application code remains authoritative for:
+
+- staffing arithmetic,
+- eligibility,
+- volunteer ranking,
+- assignment capacity,
+- contact limits,
+- age and background-check policies,
+- quiet hours,
+- safety overrides,
+- routing thresholds,
+- idempotency,
+- Attention Budget accounting,
+- settlement state transitions,
+- and human interrupts.
+
+The model can raise a safety concern.
+
+It cannot lower one.
+
+---
+
+## Architecture
+
+![QUORUM Architecture](docs/quorum-architecture.png)
+
+QUORUM uses two persistent Strands agent roles:
+
+### Coordinator Agent
+
+Responsible for organization-level coordination.
+
+Example session:
+
+```text
+org:riverside# QUORUM
+
 QUORUM is an attention-aware autonomous roster-recovery agent for the synthetic **Riverside Food Bank**. It uses the Strands Agents SDK with Google Gemini as the active model provider. Strands remains provider-agnostic; QUORUM's agent architecture and deterministic authority do not change with the model provider.
 
 Implemented:
