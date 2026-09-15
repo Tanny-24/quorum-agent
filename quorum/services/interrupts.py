@@ -5,14 +5,27 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from quorum.domain.models import InterruptRecord
+from quorum.domain.models import (
+    HumanDecisionAction,
+    InterruptRecord,
+    InterruptStatus,
+    RoutingClass,
+)
 from quorum.persistence.memory import MemoryStore
+from quorum.services.ledger import DecisionLedger
 from quorum.utils import stable_id, utc_now
 
 
 class InterruptService:
     def __init__(self, store: MemoryStore) -> None:
         self.store = store
+        self.ledger = DecisionLedger(store)
+
+    @staticmethod
+    def allowed_actions(record: InterruptRecord) -> list[HumanDecisionAction]:
+        if record.status != InterruptStatus.OPEN:
+            return []
+        return [HumanDecisionAction.APPROVE, HumanDecisionAction.VETO]
 
     def create(self, session_id: str, idempotency_key: str, reason: dict[str, Any]) -> InterruptRecord:
         return self.store.create_interrupt(
@@ -30,8 +43,12 @@ class InterruptService:
         record_id: str,
         decision: str,
         resume: Callable[[InterruptRecord, str], Any] | None = None,
+        *,
+        expected_version: int | None = None,
+        note: str | None = None,
+        actor: str | None = None,
     ) -> tuple[bool, InterruptRecord | None, Any | None]:
-        won, record = self.store.claim_interrupt(record_id)
+        won, record = self.store.claim_interrupt(record_id, expected_version)
         if not won or record is None:
             return False, record, None
         try:
@@ -39,7 +56,28 @@ class InterruptService:
         except Exception:
             self.store.release_interrupt(record_id)
             raise
-        completed = self.store.complete_interrupt(record_id, decision)
+        outcome = "workflow_resumed" if resume else "recorded_no_runtime_resumer"
+        completed = self.store.complete_interrupt(
+            record_id,
+            decision,
+            note=note,
+            actor=actor,
+            outcome=outcome,
+        )
+        if actor:
+            normalized = decision.upper()
+            ledger_decision = "APPROVED" if normalized == "APPROVE" else "VETOED"
+            self.ledger.record(
+                "human_decision",
+                ledger_decision,
+                routing_class=RoutingClass.RED,
+                reason=outcome,
+                details={
+                    "interrupt_id": completed.id,
+                    "actor": actor,
+                },
+                key=f"human-decision-resolution:{completed.id}",
+            )
         return True, completed, result
 
 

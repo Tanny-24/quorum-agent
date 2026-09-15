@@ -8,6 +8,7 @@ from typing import Any
 
 from quorum.domain.models import PendingEffect, PendingStatus
 from quorum.persistence.memory import MemoryStore
+from quorum.services.ledger import DecisionLedger
 from quorum.utils import stable_id, utc_now
 
 SETTLEMENT_WINDOWS = {"send_message": 10, "confirm_assignment": 5, "widen_search": 15}
@@ -16,6 +17,7 @@ SETTLEMENT_WINDOWS = {"send_message": 10, "confirm_assignment": 5, "widen_search
 class PendingEffectService:
     def __init__(self, store: MemoryStore) -> None:
         self.store = store
+        self.ledger = DecisionLedger(store)
 
     def create(
         self,
@@ -40,9 +42,24 @@ class PendingEffectService:
             )
         )
 
-    def cancel(self, pending_id: str) -> tuple[bool, str]:
+    def cancel(
+        self, pending_id: str, *, actor: str | None = None
+    ) -> tuple[bool, str]:
         won, item = self.store.transition_pending(pending_id, PendingStatus.PENDING, PendingStatus.CANCELLED)
         if won:
+            if actor and item is not None:
+                shift_id = item.payload.get("shift_id")
+                self.ledger.record(
+                    "pending",
+                    "CANCELLED",
+                    reason="coordinator_cancelled",
+                    details={
+                        "pending_id": item.id,
+                        "actor": actor,
+                        "shift_id": shift_id if isinstance(shift_id, str) else None,
+                    },
+                    key=f"pending-cancel:{item.id}",
+                )
             return True, "cancelled"
         if item is None:
             return False, "not_found"

@@ -10,7 +10,7 @@ def main() -> int:
         print("SKIP: Telegram configuration is unavailable")
         return 2
     result = TelegramChannel(settings.telegram_bot_token).send(
-        settings.telegram_chat_id, "QUORUM Gemini integration ready"
+        settings.telegram_chat_id, "QUORUM channel integration ready"
     )
     print(f"Telegram accepted={result.accepted}; provider message ID received={result.provider_msg_id is not None}")
     return 0

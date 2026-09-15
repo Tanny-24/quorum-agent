@@ -14,6 +14,7 @@ from quorum.persistence.memory import MemoryStore
 from quorum.services.candidate_ranker import CandidateRanker
 from quorum.services.gap_detector import GapDetector
 from quorum.services.ledger import DecisionLedger
+from quorum.services.transport import TransportService
 from quorum.utils import stable_id, stable_key
 
 
@@ -25,6 +26,7 @@ def build_tools(
     ranker = CandidateRanker(store)
     gaps = GapDetector(store)
     ledger = DecisionLedger(store)
+    transport = TransportService(store)
 
     @tool
     def get_shift(shift_id: str) -> dict[str, Any]:
@@ -53,9 +55,7 @@ def build_tools(
     @tool
     def find_transport_option(shift_id: str, volunteer_id: str) -> dict[str, Any]:
         """Find the fixed synthetic transport option for the demo world."""
-        if not store.get_shift(shift_id) or not store.get_volunteer(volunteer_id):
-            return {"available": False}
-        return {"available": True, "option": "Synthetic community van pickup 30 minutes before shift"}
+        return transport.find_option(shift_id, volunteer_id)
 
     @tool
     def send_message(

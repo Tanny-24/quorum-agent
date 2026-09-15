@@ -18,11 +18,11 @@ Every action follows one of four routes: GREEN executes, YELLOW enters a cancell
 
 ## How we built it
 
-QUORUM uses Python 3.13 and Strands Agents SDK 1.53.0. Google Gemini is the active model provider through Strands' official GeminiModel. A shared provider factory supplies the same Strands Model interface to the Coordinator, per-thread Negotiator, and structured reply classifier.
+QUORUM uses Python 3.13 and Strands Agents SDK 1.53.0. A shared provider factory supports Amazon Bedrock as the primary configured provider and Google Gemini as an alternate, supplying the same Strands `Model` interface to the Coordinator, per-thread Negotiator, and structured reply classifier. The reliable browser demo uses deterministic execution and does not require either provider.
 
-Gemini handles language interpretation and tool selection. Deterministic Python services retain authority over staffing arithmetic, eligibility, ranking, contact limits, transport facts, idempotency, assignment capacity, routing thresholds, Attention Budgets, pending effects, interrupts, and the decision ledger. File-backed Strands sessions make conversations recoverable, and locked local persistence supports the demo.
+Provider-backed agents handle language interpretation and tool selection. Deterministic Python services retain authority over staffing arithmetic, eligibility, ranking, contact limits, transport facts, idempotency, assignment capacity, routing thresholds, Attention Budgets, pending effects, interrupts, and the decision ledger. File-backed Strands sessions make conversations recoverable, and locked local persistence supports the demo.
 
-The live runner records observable proof: a Coordinator tool call, a two-turn Negotiator transport exchange, structured classifications, conditional assignment, resolved gap state, and a persisted RED safety interrupt. Normal tests mock external network calls while preserving the same boundaries.
+The product demo records observable proof: backend orchestration steps, conditional transport, assignments, resolved gap state, and a persisted RED safety interrupt. Normal tests mock external network calls while preserving the same boundaries; live-provider checks remain separate opt-in scripts.
 
 ## Challenges
 
@@ -30,11 +30,11 @@ The first challenge was keeping probabilistic language behavior away from irreve
 
 The second was durable interruption. A human decision may arrive after a process restart, so the repository includes a restart-focused Strands interrupt spike and idempotent interrupt records.
 
-The third was adapting under deadline constraints. AWS account activation blocked live Bedrock validation, and the initially configured Gemini 2.5 model was unavailable to new users. Strands' provider abstraction let us validate the same agents with gemini-3.6-flash without redesigning QUORUM. We also paced the demo around API free-tier request windows.
+The third was keeping the product demonstrable without depending on cloud quota. Strands' provider abstraction supports Bedrock and Gemini without redesigning QUORUM, while `deterministic_demo` runs the complete operational workflow with no model request.
 
 ## Accomplishments
 
-- Real Gemini-backed Strands agents and Python tool calls.
+- Provider-neutral Strands agents and Python tool calls, with Bedrock/Gemini construction tests.
 - Coordinator and per-thread Negotiator separation with durable session IDs.
 - Explainable candidate scores and deterministic assignment capacity.
 - Cancellable YELLOW effects and durable RED human interrupts.
@@ -48,8 +48,8 @@ Agent reliability improves when the model has a narrow job. QUORUM asks Gemini t
 
 ## What's next
 
-Next steps are replayable evaluation sets, adversarial reply tests, a small operator dashboard, richer transport and availability tools, encrypted production persistence, and deployment validation. Amazon Bedrock, AgentCore, EventBridge, and live DynamoDB are planned only after AWS account activation is resolved.
+The final local portfolio build includes a replayable 20-case synthetic evaluation and a responsive operator dashboard. Production authentication, durable persistence, deployment infrastructure, and operational monitoring are intentionally not claimed.
 
 ## Technologies used
 
-Python, Strands Agents SDK, Google Gemini API, FastAPI, Pydantic, HTTPX, pytest, and Telegram Bot API.
+Python, Strands Agents SDK, Amazon Bedrock, Google Gemini, FastAPI, Pydantic, boto3, HTTPX, pytest, Next.js, TypeScript, Tailwind CSS, and Telegram Bot API.

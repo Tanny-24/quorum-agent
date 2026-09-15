@@ -18,6 +18,7 @@ from quorum.domain.models import (
     Organisation,
     PendingEffect,
     PendingStatus,
+    RecoveryRun,
     Role,
     Shift,
     Site,
@@ -44,6 +45,8 @@ class MemoryStore:
         self.processed_events: set[str] = set()
         self.executed_effects: dict[str, dict[str, Any]] = {}
         self._budget_decisions: set[str] = set()
+        self.recovery_runs: dict[str, RecoveryRun] = {}
+        self._recovery_run_keys: dict[str, str] = {}
 
     def seed(
         self,
@@ -58,10 +61,42 @@ class MemoryStore:
             self.volunteers.update({item.id: deepcopy(item) for item in volunteers})
             self.shifts.update({item.id: deepcopy(item) for item in shifts})
 
+    def reset_synthetic(
+        self,
+        organisations: list[Organisation],
+        sites: list[Site],
+        volunteers: list[Volunteer],
+        shifts: list[Shift],
+    ) -> int:
+        """Replace only the in-memory synthetic workspace's operational state."""
+        with self._lock:
+            runs_cleared = len(self.recovery_runs)
+            self.organisations = {item.id: deepcopy(item) for item in organisations}
+            self.sites = {item.id: deepcopy(item) for item in sites}
+            self.volunteers = {item.id: deepcopy(item) for item in volunteers}
+            self.shifts = {item.id: deepcopy(item) for item in shifts}
+            self.assignments.clear()
+            self.gaps.clear()
+            self.negotiations.clear()
+            self.pending.clear()
+            self.interrupts.clear()
+            self.ledger.clear()
+            self.budgets.clear()
+            self.processed_events.clear()
+            self.executed_effects.clear()
+            self._budget_decisions.clear()
+            self.recovery_runs.clear()
+            self._recovery_run_keys.clear()
+            return runs_cleared
+
     def get_shift(self, shift_id: str) -> Shift | None:
         with self._lock:
             value = self.shifts.get(shift_id)
             return deepcopy(value)
+
+    def get_site(self, site_id: str) -> Site | None:
+        with self._lock:
+            return deepcopy(self.sites.get(site_id))
 
     def list_shifts(self) -> list[Shift]:
         with self._lock:
@@ -78,6 +113,22 @@ class MemoryStore:
     def list_assignments(self, shift_id: str) -> list[Assignment]:
         with self._lock:
             return deepcopy([item for item in self.assignments.values() if item.shift_id == shift_id])
+
+    def list_assignments_for_volunteer(
+        self, volunteer_id: str
+    ) -> list[Assignment]:
+        with self._lock:
+            return deepcopy(
+                [
+                    item
+                    for item in self.assignments.values()
+                    if item.volunteer_id == volunteer_id
+                ]
+            )
+
+    def get_assignment(self, assignment_id: str) -> Assignment | None:
+        with self._lock:
+            return deepcopy(self.assignments.get(assignment_id))
 
     def upsert_gap(self, gap: Gap) -> Gap:
         with self._lock:
@@ -166,6 +217,14 @@ class MemoryStore:
             self.pending[pending.id] = deepcopy(pending)
             return deepcopy(pending)
 
+    def get_pending(self, pending_id: str) -> PendingEffect | None:
+        with self._lock:
+            return deepcopy(self.pending.get(pending_id))
+
+    def list_pending(self) -> list[PendingEffect]:
+        with self._lock:
+            return deepcopy(list(self.pending.values()))
+
     def list_due_pending(self, now: datetime) -> list[PendingEffect]:
         with self._lock:
             return deepcopy(
@@ -194,6 +253,10 @@ class MemoryStore:
             self.interrupts[record.id] = deepcopy(record)
             return deepcopy(record)
 
+    def get_interrupt(self, record_id: str) -> InterruptRecord | None:
+        with self._lock:
+            return deepcopy(self.interrupts.get(record_id))
+
     def update_interrupt(self, record: InterruptRecord) -> InterruptRecord:
         with self._lock:
             if record.id not in self.interrupts:
@@ -201,22 +264,41 @@ class MemoryStore:
             self.interrupts[record.id] = deepcopy(record)
             return deepcopy(record)
 
-    def claim_interrupt(self, record_id: str) -> tuple[bool, InterruptRecord | None]:
+    def claim_interrupt(
+        self, record_id: str, expected_version: int | None = None
+    ) -> tuple[bool, InterruptRecord | None]:
         with self._lock:
             item = self.interrupts.get(record_id)
-            if item is None or item.status != InterruptStatus.OPEN:
+            if (
+                item is None
+                or item.status != InterruptStatus.OPEN
+                or (expected_version is not None and item.version != expected_version)
+            ):
                 return False, deepcopy(item)
             item.status = InterruptStatus.RESOLVING
+            item.version += 1
             return True, deepcopy(item)
 
-    def complete_interrupt(self, record_id: str, decision: str) -> InterruptRecord:
+    def complete_interrupt(
+        self,
+        record_id: str,
+        decision: str,
+        *,
+        note: str | None = None,
+        actor: str | None = None,
+        outcome: str | None = None,
+    ) -> InterruptRecord:
         with self._lock:
             item = self.interrupts[record_id]
             if item.status != InterruptStatus.RESOLVING:
                 raise RuntimeError("Interrupt was not claimed")
             item.status = InterruptStatus.RESOLVED
             item.decision = decision
+            item.decision_note = note
+            item.decision_actor = actor
+            item.resolution_outcome = outcome
             item.resolved_at = datetime.now(timezone.utc)
+            item.version += 1
             return deepcopy(item)
 
     def release_interrupt(self, record_id: str) -> InterruptRecord:
@@ -224,6 +306,7 @@ class MemoryStore:
             item = self.interrupts[record_id]
             if item.status == InterruptStatus.RESOLVING:
                 item.status = InterruptStatus.OPEN
+                item.version += 1
             return deepcopy(item)
 
     def resolve_interrupt(self, record_id: str, decision: str) -> tuple[bool, InterruptRecord | None]:
@@ -235,6 +318,15 @@ class MemoryStore:
     def list_open_interrupts(self) -> list[InterruptRecord]:
         with self._lock:
             return deepcopy([item for item in self.interrupts.values() if item.status == InterruptStatus.OPEN])
+
+    def list_interrupts(
+        self, status: InterruptStatus | None = None
+    ) -> list[InterruptRecord]:
+        with self._lock:
+            items = list(self.interrupts.values())
+            if status is not None:
+                items = [item for item in items if item.status == status]
+            return deepcopy(items)
 
     def get_budget(self, budget_id: str, allowance: int = 2) -> AttentionBudget:
         with self._lock:
@@ -269,6 +361,36 @@ class MemoryStore:
             self.negotiations[thread.id] = deepcopy(thread)
             return deepcopy(thread)
 
+    def get_negotiation(self, thread_id: str) -> NegotiationThread | None:
+        with self._lock:
+            return deepcopy(self.negotiations.get(thread_id))
+
     def list_negotiations(self) -> list[NegotiationThread]:
         with self._lock:
             return deepcopy(list(self.negotiations.values()))
+
+    def create_recovery_run(
+        self, run: RecoveryRun
+    ) -> tuple[bool, RecoveryRun]:
+        with self._lock:
+            existing_id = self._recovery_run_keys.get(run.idempotency_key)
+            if existing_id:
+                return False, deepcopy(self.recovery_runs[existing_id])
+            self.recovery_runs[run.id] = deepcopy(run)
+            self._recovery_run_keys[run.idempotency_key] = run.id
+            return True, deepcopy(run)
+
+    def update_recovery_run(self, run: RecoveryRun) -> RecoveryRun:
+        with self._lock:
+            if run.id not in self.recovery_runs:
+                raise KeyError(run.id)
+            self.recovery_runs[run.id] = deepcopy(run)
+            return deepcopy(run)
+
+    def get_recovery_run(self, run_id: str) -> RecoveryRun | None:
+        with self._lock:
+            return deepcopy(self.recovery_runs.get(run_id))
+
+    def list_recovery_runs(self) -> list[RecoveryRun]:
+        with self._lock:
+            return deepcopy(list(self.recovery_runs.values()))

@@ -26,13 +26,15 @@ def create_model(settings: Settings, *, classifier: bool = False) -> Model:
             },
         )
     if provider == "bedrock":
+        if not settings.aws_region:
+            raise RuntimeError("AWS_REGION must be configured for Amazon Bedrock")
         model_id = (
             (settings.bedrock_classifier_model or settings.model_id)
             if classifier
             else (settings.bedrock_reasoner_model or settings.model_id)
         )
-        if not model_id:
-            raise RuntimeError("A verified Bedrock model ID must be configured")
+        if not model_id or not model_id.strip():
+            raise RuntimeError("QUORUM_MODEL_ID must name an Amazon Bedrock model or inference profile")
         return BedrockModel(
             region_name=settings.aws_region,
             model_id=model_id,

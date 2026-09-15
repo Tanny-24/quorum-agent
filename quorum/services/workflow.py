@@ -23,12 +23,17 @@ from quorum.services.gap_detector import GapDetector
 from quorum.services.interrupts import InterruptService
 from quorum.services.ledger import DecisionLedger
 from quorum.services.pending_effects import PendingEffectService
+from quorum.services.transport import TransportService
 from quorum.utils import stable_id, stable_key, utc_now
 
 
 class CoreWorkflow:
     def __init__(
-        self, store: MemoryStore, classifier: ReplyClassifier | ModelReplyClassifier | None = None
+        self,
+        store: MemoryStore,
+        classifier: ReplyClassifier | ModelReplyClassifier | None = None,
+        *,
+        attention_allowance: int = 2,
     ) -> None:
         self.store = store
         self.events = EventHandler(store)
@@ -37,7 +42,8 @@ class CoreWorkflow:
         self.ledger = DecisionLedger(store)
         self.pending = PendingEffectService(store)
         self.interrupts = InterruptService(store)
-        self.escalation = EscalationEngine(store)
+        self.escalation = EscalationEngine(store, allowance=attention_allowance)
+        self.transport = TransportService(store)
 
     def staffing_event(self, kind: EventKind, shift_id: str, event_key: str) -> list[object]:
         event = QuorumEvent(
@@ -122,7 +128,14 @@ class CoreWorkflow:
             return {"classification": classification, "routing": decision, "interrupt": record}
         transport = None
         if classification.intent == ReplyIntent.ACCEPT_IF and classification.condition == "transport":
-            transport = {"available": True, "option": "Synthetic community van pickup 30 minutes before shift"}
+            transport = self.transport.find_option(thread.shift_id, thread.volunteer_id)
+            if not transport["available"]:
+                return {
+                    "classification": classification,
+                    "transport": transport,
+                    "confirmed": False,
+                    "reason": "transport_unavailable",
+                }
         if classification.intent not in {ReplyIntent.ACCEPT, ReplyIntent.ACCEPT_IF}:
             return {"classification": classification, "confirmed": False}
         shift = self.store.get_shift(thread.shift_id)
@@ -143,8 +156,16 @@ class CoreWorkflow:
         self.ledger.record(
             "assignment",
             "CONFIRMED" if confirmed else "REJECTED",
+            routing_class=(
+                RoutingClass.GREEN if confirmed else RoutingClass.DEFER
+            ),
             reason=reason,
-            details={"assignment_id": saved.id if saved else None},
+            details={
+                "assignment_id": saved.id if saved else None,
+                "shift_id": thread.shift_id,
+                "thread_id": thread.id,
+                "volunteer_id": thread.volunteer_id,
+            },
             key=f"assignment-ledger:{assignment.id}",
         )
         return {
@@ -152,6 +173,7 @@ class CoreWorkflow:
             "transport": transport,
             "confirmed": confirmed,
             "reason": reason,
+            "assignment": saved,
         }
 
     def resolve_gap_if_staffed(self, gap_id: str) -> bool:

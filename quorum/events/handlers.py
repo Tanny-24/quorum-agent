@@ -28,5 +28,9 @@ class EventHandler:
         if event.kind in {EventKind.VOLUNTEER_CANCELLED, EventKind.NO_SHOW, EventKind.SHIFT_CREATED}:
             shift_id = str(event.payload["shift_id"])
             gaps = self.gaps.detect(shift_id, event.id)
-        self.ledger.record("event", "PROCESSED", event_id=event.id, details={"kind": event.kind.value})
+        details = {"kind": event.kind.value}
+        shift_id = event.payload.get("shift_id")
+        if isinstance(shift_id, str):
+            details["shift_id"] = shift_id
+        self.ledger.record("event", "PROCESSED", event_id=event.id, details=details)
         return {"duplicate": False, "gaps": gaps}

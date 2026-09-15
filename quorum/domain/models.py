@@ -59,6 +59,11 @@ class InterruptStatus(StrEnum):
     RESOLVED = "RESOLVED"
 
 
+class HumanDecisionAction(StrEnum):
+    APPROVE = "APPROVE"
+    VETO = "VETO"
+
+
 class ReplyIntent(StrEnum):
     ACCEPT = "ACCEPT"
     ACCEPT_IF = "ACCEPT_IF"
@@ -73,6 +78,19 @@ class RoutingClass(StrEnum):
     YELLOW = "YELLOW"
     RED = "RED"
     DEFER = "SILENT/DEFER"
+
+
+class RecoveryRunStatus(StrEnum):
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    WAITING_FOR_HUMAN = "WAITING_FOR_HUMAN"
+    FAILED = "FAILED"
+
+
+class RecoveryStepStatus(StrEnum):
+    COMPLETED = "COMPLETED"
+    WAITING_FOR_HUMAN = "WAITING_FOR_HUMAN"
+    FAILED = "FAILED"
 
 
 class Organisation(SyntheticModel):
@@ -182,6 +200,10 @@ class InterruptRecord(SyntheticModel):
     created_at: datetime
     resolved_at: datetime | None = None
     decision: str | None = None
+    decision_note: str | None = None
+    decision_actor: str | None = None
+    resolution_outcome: str | None = None
+    version: int = Field(default=1, ge=1)
 
 
 class LedgerEntry(SyntheticModel):
@@ -221,3 +243,32 @@ class RoutingDecision(BaseModel):
     reason: str
     budget_spent: bool = False
     budget_override: bool = False
+
+
+class RecoveryRunStep(SyntheticModel):
+    id: str
+    step_type: str
+    label: str
+    status: RecoveryStepStatus
+    timestamp: datetime
+    related_entity_id: str | None = None
+    summary: str
+
+
+class RecoveryRun(SyntheticModel):
+    id: str
+    idempotency_key: str
+    scenario_id: str
+    execution_mode: str = "deterministic_demo"
+    status: RecoveryRunStatus = RecoveryRunStatus.RUNNING
+    started_at: datetime
+    completed_at: datetime | None = None
+    shift_id: str
+    trigger: str
+    steps: list[RecoveryRunStep] = Field(default_factory=list)
+    outcome: str | None = None
+    human_decision_required: bool = False
+    interrupt_id: str | None = None
+    attention_spent_before: int = Field(default=0, ge=0)
+    attention_spent_after: int = Field(default=0, ge=0)
+    error: str | None = None

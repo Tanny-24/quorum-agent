@@ -1,0 +1,273 @@
+{
+  "health": {
+    "status": "ok"
+  },
+  "attention_budget": {
+    "allowance": 5,
+    "spent": 2,
+    "remaining": 3,
+    "overrides": 0
+  },
+  "dashboard": {
+    "generated_at": "2026-09-15T09:00:00Z",
+    "attention_budget": {
+      "allowance": 5,
+      "spent": 2,
+      "remaining": 3,
+      "overrides": 0
+    },
+    "counts": {
+      "total_shifts": 6,
+      "open_gaps": 1,
+      "active_recoveries": 1,
+      "pending_effects": 1,
+      "human_decisions_required": 1
+    },
+    "needs_attention": [
+      {
+        "interrupt_id": "interrupt-1",
+        "status": "OPEN",
+        "title": "Injury requires human review",
+        "created_at": "2026-09-15T08:55:00Z",
+        "routing_class": "RED",
+        "safety_reason": "injury",
+        "routing_reason": "layer_0:injury",
+        "shift_id": "shift-1",
+        "volunteer_id": "vol-09",
+        "attention_spent": true,
+        "attention_override": false
+      }
+    ],
+    "active_operations": [
+      {
+        "shift_id": "shift-1",
+        "site_id": "site-1",
+        "site_name": "River Hall",
+        "starts_at": "2026-09-15T10:00:00Z",
+        "ends_at": "2026-09-15T13:00:00Z",
+        "coverage": [
+          {
+            "role": "driver",
+            "required": 1,
+            "assigned": 0,
+            "shortfall": 1
+          },
+          {
+            "role": "sorter",
+            "required": 2,
+            "assigned": 2,
+            "shortfall": 0
+          }
+        ],
+        "gap_count": 1,
+        "gap_statuses": ["SEARCHING"],
+        "status": "RECOVERING"
+      }
+    ],
+    "recent_activity": [
+      {
+        "id": "ledger-1",
+        "entry_id": "ledger-1",
+        "timestamp": "2026-09-15T08:54:00Z",
+        "category": "routing",
+        "decision": "interrupt",
+        "summary": "Routing: interrupt",
+        "title": "Interrupt",
+        "route": "RED",
+        "routing_class": "RED",
+        "reason": "layer_0:injury",
+        "event_id": "event-1",
+        "gap_id": "gap-1",
+        "shift_id": "shift-1",
+        "shift_name": "River Hall",
+        "interrupt_id": "interrupt-1",
+        "pending_id": null,
+        "attention_effect": "SPENT",
+        "ev_score": 0.92,
+        "ev_threshold": 0.8
+      }
+    ]
+  },
+  "shifts": [
+    {
+      "shift_id": "shift-1",
+      "site_id": "site-1",
+      "site_name": "River Hall",
+      "starts_at": "2026-09-15T10:00:00Z",
+      "ends_at": "2026-09-15T13:00:00Z",
+      "coverage": [
+        {
+          "role": "driver",
+          "required": 1,
+          "assigned": 0,
+          "shortfall": 1
+        },
+        {
+          "role": "sorter",
+          "required": 2,
+          "assigned": 2,
+          "shortfall": 0
+        }
+      ],
+      "gap_count": 1,
+      "gap_statuses": ["SEARCHING"],
+      "status": "RECOVERING"
+    }
+  ],
+  "shift_detail": {
+    "shift_id": "shift-1",
+    "site_id": "site-1",
+    "site_name": "River Hall",
+    "starts_at": "2026-09-15T10:00:00Z",
+    "ends_at": "2026-09-15T13:00:00Z",
+    "coverage": [
+      {
+        "role": "driver",
+        "required": 1,
+        "assigned": 0,
+        "shortfall": 1
+      },
+      {
+        "role": "sorter",
+        "required": 2,
+        "assigned": 2,
+        "shortfall": 0
+      }
+    ],
+    "gap_count": 1,
+    "gap_statuses": ["SEARCHING"],
+    "status": "RECOVERING",
+    "organisation_id": "org:riverside",
+    "assignments": [
+      {
+        "assignment_id": "assignment-1",
+        "volunteer": {
+          "volunteer_id": "vol-01",
+          "display_name": "Synthetic Volunteer 01"
+        },
+        "role": "sorter",
+        "confirmed_at": "2026-09-15T08:30:00Z"
+      }
+    ],
+    "gaps": [
+      {
+        "gap_id": "gap-1",
+        "role": "driver",
+        "shortfall": 1,
+        "status": "SEARCHING",
+        "detected_at": "2026-09-15T08:45:00Z"
+      }
+    ],
+    "ranked_candidates": [
+      {
+        "volunteer": {
+          "volunteer_id": "vol-09",
+          "display_name": "Synthetic Volunteer 09"
+        },
+        "role": "driver",
+        "score": 0.896212,
+        "breakdown": {
+          "reliability": 0.291667,
+          "acceptance_rate": 0.204545,
+          "travel_feasibility": 0.15,
+          "availability_fit": 0.15,
+          "contact_load": 0.1,
+          "recent_contact_penalty": 0.0
+        },
+        "needs_transport": false
+      }
+    ],
+    "pending_effects": [
+      {
+        "effect_id": "pending-1",
+        "pending_id": "pending-1",
+        "effect_type": "send_message",
+        "description": "Send queued volunteer message",
+        "status": "PENDING",
+        "created_at": "2026-09-15T08:50:00Z",
+        "settle_at": "2026-09-15T09:00:00Z",
+        "updated_at": "2026-09-15T08:50:00Z",
+        "settled_at": null,
+        "can_cancel": true,
+        "cancellable": true,
+        "shift_id": "shift-1",
+        "volunteer_id": "vol-09",
+        "thread_id": "thread-1",
+        "related_shift": {
+          "shift_id": "shift-1",
+          "site_id": "site-1",
+          "site_name": "River Hall",
+          "starts_at": "2026-09-15T10:00:00Z",
+          "ends_at": "2026-09-15T13:00:00Z"
+        },
+        "result_summary": null,
+        "failure_summary": null
+      }
+    ],
+    "needs_attention": [
+      {
+        "interrupt_id": "interrupt-1",
+        "status": "OPEN",
+        "title": "Injury requires human review",
+        "created_at": "2026-09-15T08:55:00Z",
+        "routing_class": "RED",
+        "safety_reason": "injury",
+        "routing_reason": "layer_0:injury",
+        "shift_id": "shift-1",
+        "volunteer_id": "vol-09",
+        "attention_spent": true,
+        "attention_override": false
+      }
+    ],
+    "recent_activity": [
+      {
+        "id": "ledger-1",
+        "entry_id": "ledger-1",
+        "timestamp": "2026-09-15T08:54:00Z",
+        "category": "routing",
+        "decision": "interrupt",
+        "summary": "Routing: interrupt",
+        "title": "Interrupt",
+        "route": "RED",
+        "routing_class": "RED",
+        "reason": "layer_0:injury",
+        "event_id": "event-1",
+        "gap_id": "gap-1",
+        "shift_id": "shift-1",
+        "shift_name": "River Hall",
+        "interrupt_id": "interrupt-1",
+        "pending_id": null,
+        "attention_effect": "SPENT",
+        "ev_score": 0.92,
+        "ev_threshold": 0.8
+      }
+    ]
+  },
+  "pending": [
+    {
+      "effect_id": "pending-1",
+      "pending_id": "pending-1",
+      "effect_type": "send_message",
+      "description": "Send queued volunteer message",
+      "status": "PENDING",
+      "created_at": "2026-09-15T08:50:00Z",
+      "settle_at": "2026-09-15T09:00:00Z",
+      "updated_at": "2026-09-15T08:50:00Z",
+      "settled_at": null,
+      "can_cancel": true,
+      "cancellable": true,
+      "shift_id": "shift-1",
+      "volunteer_id": "vol-09",
+      "thread_id": "thread-1",
+      "related_shift": {
+        "shift_id": "shift-1",
+        "site_id": "site-1",
+        "site_name": "River Hall",
+        "starts_at": "2026-09-15T10:00:00Z",
+        "ends_at": "2026-09-15T13:00:00Z"
+      },
+      "result_summary": null,
+      "failure_summary": null
+    }
+  ]
+}

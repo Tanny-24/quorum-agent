@@ -1,4 +1,10 @@
-# QUORUM Product UI Roadmap
+# QUORUM Product UI Roadmap (Historical)
+
+This document records the Phase 0 planning sequence. The final portfolio scope
+implemented the core product surfaces through Demo Mode and Volunteers, then
+removed unfinished Analytics and Settings links from primary navigation. It is
+not an instruction to begin another development phase; current truth lives in
+the README, architecture, and local demo guide.
 
 ## Delivery principles
 
@@ -164,9 +170,11 @@
 
 **Risk:** High and optional.
 
-## Recommended next implementation slice
+## Archived planning note
 
-Start with Phase 1 and Phase 2 in parallel only at the contract boundary: establish final Pydantic/TypeScript shapes first, then let the frontend use schema-faithful fixtures while backend read queries are implemented. Do not connect UI mutation flows until authentication, durable state, and Human Decision semantics are specified.
+The original recommendation was completed across the subsequent implementation
+phases. Authentication, deployment, durable analytics, and editable settings
+remain explicitly outside this local portfolio build.
 
 The first reviewable milestone should be:
 
@@ -175,4 +183,3 @@ The first reviewable milestone should be:
 3. working read-only `/dashboard`, enriched `/shifts`, and `/shifts/{id}` endpoints;
 4. contract tests proving frontend fixtures match backend JSON;
 5. the original 28 backend tests still passing.
-
